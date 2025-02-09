@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  # Zookeeper: required by Kafka
+  # Zookeeper (required by Kafka)
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
@@ -18,11 +18,29 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Advertise the Kafka container to other services by its Docker network name.
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"
+
+  # Elasticsearch service
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  # Kibana for visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
 
   # Log generator service instances
   service1:
@@ -45,3 +63,20 @@ services:
       - SERVICE_NAME=Service-3
       - KAFKA_BROKER=kafka:9092
       - KAFKA_TOPIC=logs
+
+  # Log consumer service
+  consumer:
+    build: .
+    command: python log_consumer.py
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=logs
+      - ES_HOST=elasticsearch
+      - ES_PORT=9200
+      - ES_INDEX=logs
+    depends_on:
+      - kafka
+      - elasticsearch
+
+volumes:
+  esdata:

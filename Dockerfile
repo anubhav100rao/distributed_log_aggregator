@@ -3,11 +3,12 @@ FROM python:3.8-slim
 
 WORKDIR /app
 
-# Copy the log generator script into the container
+# Copy the scripts into the container
 COPY log_generator.py .
+COPY log_consumer.py .
 
-# Install the kafka-python library
-RUN pip install kafka-python
+# Install required Python packages
+RUN pip install kafka-python elasticsearch
 
-# Run the log generator script
+# By default, run the log generator (this can be overridden by the service command)
 CMD ["python", "log_generator.py"]
