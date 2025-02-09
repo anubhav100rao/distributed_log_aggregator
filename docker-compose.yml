@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  # Zookeeper: required by Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  # Kafka broker
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Advertise the Kafka container to other services by its Docker network name.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+
+  # Log generator service instances
+  service1:
+    build: .
+    environment:
+      - SERVICE_NAME=Service-1
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=logs
+
+  service2:
+    build: .
+    environment:
+      - SERVICE_NAME=Service-2
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=logs
+
+  service3:
+    build: .
+    environment:
+      - SERVICE_NAME=Service-3
+      - KAFKA_BROKER=kafka:9092
+      - KAFKA_TOPIC=logs
